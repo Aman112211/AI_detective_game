@@ -211,8 +211,7 @@ function SectionTitle({ eyebrow, title }) { return <div className="section-title
 function PlaceholderDetective() { return <div className="placeholder-detective"><div className="hat" /><div className="face"><span>◒</span><span>◒</span><i /></div><div className="coat" /></div>; }
 function StartScreen({ selectedMode, onModeChange, onStart, busy, error }) {
   const modes = [
-    { value: "pirate", label: "Pirate Case", subtitle: "The Vanished Doubloons" },
-    { value: "noir", label: "Noir Case", subtitle: "The Ashport Ledger Murder" },
+    { value: "pirate", label: "Pirate Case", subtitle: "The Vanished Doubloons" }
   ];
 
   return <main className="start-screen"><div className="start-copy"><span className="eyebrow">A LIMITED INQUIRY / AN UNLIMITED SEA</span><h1>AI<br /><em>Detective</em></h1><p>Choose your case and follow the clues through a locked room, a storm-tossed ship, or a rain-soaked newsroom.</p><div className="mode-select"><div className="mode-label">Choose game mode</div><div className="mode-options">{modes.map((mode) => <button type="button" key={mode.value} className={`mode-option ${selectedMode === mode.value ? "active" : ""}`} onClick={() => onModeChange(mode.value)}>{mode.label}<small>{mode.subtitle}</small></button>)}</div></div><button className="primary-button" onClick={onStart} disabled={busy}>OPEN THE CASE <span>→</span></button>{error && <p className="error">{error}</p>}</div><div className="start-art"><div className="moon" /><div className="ship-line" /><CharacterDisplay selectedMode={selectedMode} /><span className="art-caption">{selectedMode === "pirate" ? "FIRST MATE\n" : "PRIVATE EYE\n"}<b>{selectedMode === "pirate" ? "SALTY SABLE" : "VIC MARLOWE"}</b></span></div></main>;
