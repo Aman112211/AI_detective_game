@@ -34,9 +34,15 @@ def chat():
 
     case = load_case(session.get("mode", "pirate"))
     message = message.strip()
-    new_evidence_ids = discover_evidence(
-        case, message, session["discoveredEvidenceIds"]
+    is_greeting = message.lower().strip() in {"hello", "hi", "hey", "greetings"} or any(
+        token in message.lower() for token in ["hello", "hi", "hey", "greetings", "good morning", "good evening", "good afternoon"]
     )
+    if is_greeting:
+        new_evidence_ids = []
+    else:
+        new_evidence_ids = discover_evidence(
+            case, message, session["discoveredEvidenceIds"]
+        )
     all_discovered_ids = session["discoveredEvidenceIds"] + new_evidence_ids
     context = controlled_context(
         case,

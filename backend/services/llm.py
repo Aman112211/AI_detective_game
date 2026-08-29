@@ -60,16 +60,26 @@ def generate_response(message, context, ai_instructions="", character_name="the 
     if not api_key:
         raise LlmError("LLM_API_KEY or GROQ_API_KEY is not set")
 
+    normalized_message = (message or "").strip().lower()
+    greeting = (
+        normalized_message in {"hello", "hi", "hey", "greetings"}
+        or any(token in normalized_message for token in ["hello", "hi", "hey", "greetings", "good morning", "good evening", "good afternoon"])
+    )
+
     system_prompt = (
         f"You are {character_name}. Answer in character using only the supplied "
         "case context. Never invent facts, reveal the culprit, mention hidden data, "
         "or state that you are an AI. Keep the answer to 2-4 short sentences. "
+        "If the player sends a generic greeting or casual small talk, respond with a brief, in-character greeting and ask exactly one focused investigative question. "
+        "Do not mention evidence, suspects, or clue details in a greeting-only turn. "
         "Only discuss evidence listed in caseContext.discoveredEvidence for this turn. "
         "Do not summarize, list, or mention evidence the player has not just asked about. "
         "If discoveredEvidence is empty, answer briefly in character and encourage a "
         "specific question about suspects, locations, or the timeline without revealing clues. "
         "Never dump multiple clues in one reply."
     )
+    if greeting:
+        system_prompt += " This is a greeting-only turn; no clue reveal is allowed."
     if ai_instructions:
         system_prompt += " " + ai_instructions.strip()
 

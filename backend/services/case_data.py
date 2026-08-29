@@ -43,6 +43,40 @@ STOP_WORDS = {
     "s",
 }
 MIN_SINGLE_TRIGGER_LENGTH = 4
+GENERIC_GREETINGS = {
+    "hello",
+    "hi",
+    "hey",
+    "greetings",
+    "good morning",
+    "good evening",
+    "good afternoon",
+    "yo",
+    "hey there",
+    "hi there",
+}
+
+
+def is_generic_greeting(message):
+    if not isinstance(message, str):
+        return False
+
+    normalized = _normalized_text(message)
+    if not normalized:
+        return False
+
+    tokens = set(normalized.split())
+    if not tokens:
+        return False
+
+    if any(greeting in tokens for greeting in {"hello", "hi", "hey", "yo", "greetings"}):
+        return True
+
+    for greeting in GENERIC_GREETINGS:
+        if greeting in normalized:
+            return True
+
+    return len(tokens) <= 4 and any(token in {"hello", "hi", "hey", "greetings"} for token in tokens)
 
 
 def load_case(mode=None):
@@ -126,6 +160,9 @@ def _trigger_phrases_for_evidence(evidence_id, rules):
 
 
 def discover_evidence(case, message, discovered_ids):
+    if is_generic_greeting(message):
+        return []
+
     discovered = set(discovered_ids)
     evidence_discovery = case.get("evidenceDiscovery", {})
     if not isinstance(evidence_discovery, dict):
