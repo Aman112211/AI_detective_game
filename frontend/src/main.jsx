@@ -35,6 +35,8 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [pirateTalking, setPirateTalking] = useState(false);
+  const [leftHandIndex, setLeftHandIndex] = useState(0);
+  const [rightHandIndex, setRightHandIndex] = useState(0);
   const speakTimeoutRef = useRef(null);
 
   function clearSpeakTimeout() {
@@ -50,6 +52,16 @@ function App() {
       setPirateTalking(false);
       speakTimeoutRef.current = null;
     }, durationMs);
+  }
+
+  function advanceHandPoses() {
+    const roll = Math.floor(Math.random() * 3);
+    if (roll === 0 || roll === 2) {
+      setLeftHandIndex((current) => pickNextVariantIndex(current, LEFT_HAND_VARIANTS.length));
+    }
+    if (roll === 1 || roll === 2) {
+      setRightHandIndex((current) => pickNextVariantIndex(current, RIGHT_HAND_VARIANTS.length));
+    }
   }
 
   useEffect(() => () => clearSpeakTimeout(), []);
@@ -79,6 +91,7 @@ function App() {
       if (!response.ok) throw new Error(requestError(response, data));
       setMessages((current) => [...current, { role: "player", text: question }, { role: "detective", text: data.response }]);
       setQuestionsRemaining(data.questionsRemaining); setEvidence((current) => [...current, ...(data.newEvidence || [])]);
+      advanceHandPoses();
       const speakDurationMs = Math.max(1800, data.response.length * 50);
       scheduleStopTalking(speakDurationMs);
     } catch (requestError) {
@@ -106,16 +119,45 @@ function App() {
     <header className="topbar"><div className="brand"><span className="brand-mark">AD</span><span>AI Detective</span></div><div className="case-label">CASE 001 / {caseData.title}</div><div className="counter"><span>QUESTIONS LEFT</span><strong>{questionsRemaining}</strong></div></header>
     <div className="workspace">
       <aside className="suspect-board panel"><SectionTitle eyebrow="THE CREW" title="Suspect board" /><div className="suspect-list">{caseData.suspects.map((suspect) => <article className="suspect" key={suspect.id}><div className={`initial initial-${suspect.id}`}>{suspect.name.split(" ").map((word) => word[0]).join("")}</div><div><h3>{suspect.name}</h3><p>{suspect.bio}</p><span className="suspicion">{suspect.initialSuspicion.replace("_", " ")}</span></div></article>)}</div></aside>
-      <section className="detective-column"><div className="detective-area panel"><div className="lamp-glow" /><CharacterDisplay selectedMode={selectedMode} talking={pirateTalking} /><div className="detective-copy"><span className="eyebrow">FIRST MATE SALTY SABLE</span><h1>Ask the right question.</h1><p>“The sea keeps its secrets, detective. We’ll see which ones this crew forgot to bury.”</p></div></div><div className="chat panel"><SectionTitle eyebrow="INTERROGATION LOG" title="Question the detective" /><div className="transcript">{messages.length === 0 && <div className="empty-log">Your questions will appear here. Choose your words carefully.</div>}{messages.map((message, index) => <div className={`message ${message.role}`} key={`${message.role}-${index}`}><span>{message.role === "player" ? "YOU" : "SALTY SABLE"}</span><p>{message.text}</p></div>)}</div><form className="question-form" onSubmit={askQuestion}><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Ask about a suspect, clue, or moment..." disabled={busy || questionsRemaining === 0} /><button type="submit" disabled={busy || !draft.trim()}>SEND <span>↗</span></button></form>{error && <p className="error">{error}</p>}</div></section>
+      <section className="detective-column"><div className="detective-area panel"><div className="lamp-glow" /><CharacterDisplay selectedMode={selectedMode} talking={pirateTalking} leftHandIndex={leftHandIndex} rightHandIndex={rightHandIndex} /><div className="detective-copy"><span className="eyebrow">FIRST MATE SALTY SABLE</span><h1>Ask the right question.</h1><p>“The sea keeps its secrets, detective. We’ll see which ones this crew forgot to bury.”</p></div></div><div className="chat panel"><SectionTitle eyebrow="INTERROGATION LOG" title="Question the detective" /><div className="transcript">{messages.length === 0 && <div className="empty-log">Your questions will appear here. Choose your words carefully.</div>}{messages.map((message, index) => <div className={`message ${message.role}`} key={`${message.role}-${index}`}><span>{message.role === "player" ? "YOU" : "SALTY SABLE"}</span><p>{message.text}</p></div>)}</div><form className="question-form" onSubmit={askQuestion}><input value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Ask about a suspect, clue, or moment..." disabled={busy || questionsRemaining === 0} /><button type="submit" disabled={busy || !draft.trim()}>SEND <span>↗</span></button></form>{error && <p className="error">{error}</p>}</div></section>
       <aside className="evidence-board panel"><SectionTitle eyebrow="CASE FILE" title="Evidence" /><div className="evidence-list">{evidence.length === 0 ? <div className="empty-evidence">No evidence pinned yet.<br />Ask precise questions to reveal the file.</div> : evidence.map((item) => <article className="evidence" key={item.id}><span className="evidence-tag">{item.category}</span><h3>{item.name}</h3><p>{item.description}</p></article>)}</div><button className="accuse-button" onClick={() => setModalOpen(true)}>MAKE ACCUSATION <span>→</span></button></aside>
     </div>{modalOpen && <AccusationModal suspects={caseData.suspects} evidence={evidence} onClose={() => setModalOpen(false)} onSubmit={submitAccusation} busy={busy} />}
   </main>;
 }
 
-function CharacterDisplay({ selectedMode, talking }) {
-  if (selectedMode === "pirate") return <PirateCharacter talking={talking} />;
+function pickNextVariantIndex(current, count) {
+  if (count <= 1) return 0;
+  let next = current;
+  while (next === current) {
+    next = Math.floor(Math.random() * count);
+  }
+  return next;
+}
+
+function CharacterDisplay({ selectedMode, talking, leftHandIndex = 0, rightHandIndex = 0 }) {
+  if (selectedMode === "pirate") {
+    return (
+      <PirateCharacter
+        talking={talking}
+        leftHandIndex={leftHandIndex}
+        rightHandIndex={rightHandIndex}
+      />
+    );
+  }
   return <PlaceholderDetective />;
 }
+
+const LEFT_HAND_VARIANTS = Object.entries(
+  import.meta.glob("./assets/pirate/left_hand*.png", { eager: true, query: "?url", import: "default" })
+)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([, url]) => url);
+
+const RIGHT_HAND_VARIANTS = Object.entries(
+  import.meta.glob("./assets/pirate/right_hand*.png", { eager: true, query: "?url", import: "default" })
+)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([, url]) => url);
 
 const PIRATE_MOUTH_FRAMES = [
   new URL("./assets/pirate/mouth_closed.png", import.meta.url).href,
@@ -123,12 +165,14 @@ const PIRATE_MOUTH_FRAMES = [
   new URL("./assets/pirate/mouth_full_open.png", import.meta.url).href,
 ];
 
-function PirateCharacter({ talking }) {
-  const idleLayers = [
+function PirateCharacter({ talking, leftHandIndex, rightHandIndex }) {
+  const leftHandSrc = LEFT_HAND_VARIANTS[leftHandIndex % LEFT_HAND_VARIANTS.length];
+  const rightHandSrc = RIGHT_HAND_VARIANTS[rightHandIndex % RIGHT_HAND_VARIANTS.length];
+  const staticLayers = [
     { key: "body", src: new URL("./assets/pirate/body.png", import.meta.url).href },
     { key: "head", src: new URL("./assets/pirate/head.png", import.meta.url).href },
-    { key: "left_hand", src: new URL("./assets/pirate/left_hand.png", import.meta.url).href },
-    { key: "right_hand", src: new URL("./assets/pirate/right_hand.png", import.meta.url).href },
+    { key: "left_hand", src: leftHandSrc },
+    { key: "right_hand", src: rightHandSrc },
     { key: "hat", src: new URL("./assets/pirate/hat.png", import.meta.url).href },
   ];
 
@@ -149,9 +193,9 @@ function PirateCharacter({ talking }) {
 
   const mouthSrc = talking ? PIRATE_MOUTH_FRAMES[mouthIndex] : PIRATE_MOUTH_FRAMES[0];
   const visibleLayers = [
-    ...idleLayers.slice(0, 4),
+    ...staticLayers.slice(0, 4),
     { key: "mouth", src: mouthSrc },
-    idleLayers[4],
+    staticLayers[4],
   ];
 
   return (
