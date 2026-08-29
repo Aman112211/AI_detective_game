@@ -50,10 +50,33 @@ def _extract_gemini_text(result):
     return "\n".join(text_parts).strip()
 
 
+def _extract_openai_content(result):
+    try:
+        choices = result.get("choices") or []
+        if not choices:
+            return ""
+        message = choices[0].get("message") or {}
+        content = message.get("content")
+        if isinstance(content, list):
+            text_parts = []
+            for block in content:
+                if isinstance(block, dict):
+                    text = block.get("text")
+                    if text:
+                        text_parts.append(text)
+            if text_parts:
+                return "\n".join(text_parts).strip()
+        if isinstance(content, str):
+            return content.strip()
+    except Exception:
+        pass
+    return ""
+
+
 def generate_response(message, context):
     api_key = os.getenv("LLM_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    api_url = os.getenv("LLM_API_URL")
-    model = os.getenv("LLM_MODEL", "gemini-3.5-flash-lite")
+    api_url = os.getenv("LLM_API_URL", "https://api.groq.com/openai/v1/chat/completions")
+    model = os.getenv("LLM_MODEL", "llama-3.1-8b-instant")
     if not api_key:
         return _fallback_response(message, context)
 
@@ -88,7 +111,7 @@ def generate_response(message, context):
                 "x-goog-api-key": api_key,
             }
         else:
-            request_url = api_url or "https://api.openai.com/v1/chat/completions"
+            request_url = api_url
             payload = json.dumps(
                 {
                     "model": model,
@@ -113,7 +136,11 @@ def generate_response(message, context):
 
         if is_gemini:
             return _extract_gemini_text(result) or _fallback_response(message, context)
-        return result["choices"][0]["message"]["content"]
+
+        text = _extract_openai_content(result)
+        if text:
+            return text
+        return _fallback_response(message, context)
     except Exception as exc:
         print(f"[LLM_ERROR] {type(exc).__name__}: {exc}")
         traceback.print_exc()
