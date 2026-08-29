@@ -1,35 +1,286 @@
-# AI Detective
+# AI Detective — How to Play
 
-AI Detective is a work-in-progress mystery game. The current implementation contains the Flask backend API only. The React frontend, production persistence, and final game presentation are not implemented yet.
+AI Detective is a single-player mystery game where the player interrogates a fictional detective, gathers clues, and finally makes a criminal accusation.
 
-The frozen mystery is stored server-side in `backend/data/mystery-solution.json`. It is the source of truth for the case and must not be copied into frontend code or exposed by an API response.
+The current active mode is the pirate case: The Vanished Doubloons of the Crimson Gull. The noir mode is present in the project structure but is not fully playable yet.
 
-## Current Features
+## Game Overview
 
-- Flask REST API
-- CORS support for local frontend development
-- Environment variable loading with `python-dotenv`
-- In-memory game sessions
-- Server-authoritative question counter
-- Controlled evidence discovery
-- Optional LLM response adapter
-- Deterministic in-character fallback when no LLM key is configured
-- Server-side accusation scoring
+You are assigned to solve a theft on a pirate ship.
 
-## Setup
+The captain's locked chest of 500 gold doubloons has vanished during a stormy night. Your job is to ask smart questions, uncover the right evidence, and identify the culprit before you run out of questions.
 
-From the project root, create or activate a virtual environment and install the backend dependencies:
+The game uses a structured detective loop:
+
+1. Start a case
+2. Read the briefing
+3. Ask questions about suspects, locations, timelines, and clues
+4. Watch for newly revealed evidence
+5. Build a theory about who did it and how
+6. Submit an accusation before your question limit is used up
+
+## What the Player Sees
+
+At the start screen, the player selects a game mode.
+
+The playable current mode is:
+
+- Pirate case: The Vanished Doubloons of the Crimson Gull
+
+The interface includes:
+
+- a suspect board
+- a detective interrogation panel
+- an evidence board
+- a question counter
+- a final accusation modal
+- a score screen when the round ends
+
+## Objective
+
+Your goal is to determine:
+
+- who stole the treasure
+- how the theft was carried out
+- why they did it
+- which evidence supports the accusation
+
+The investigation is won only when the accusation matches the server-side answer key.
+
+## Game Flow
+
+### 1. Start a new game
+
+From the start screen, choose the pirate mode and press Open the Case.
+
+This creates a session on the backend and returns:
+
+- the session ID
+- the case title
+- the briefing
+- the suspect list
+- the number of remaining questions
+
+### 2. Read the briefing
+
+The briefing gives the background of the case and states the central mystery.
+
+For the pirate case, the key facts are:
+
+- the captain's chest of 500 doubloons disappeared overnight
+- a storm covered the deck from midnight to 3am
+- the cabin door was found locked from the outside
+- the cabin porthole was unlatched
+- four suspects had enough access or motive to be relevant
+
+### 3. Ask questions
+
+The player types a question into the interrogation box and sends it.
+
+Good questions usually target one of these areas:
+
+- a suspect's motive
+- a suspect's alibi
+- a timeline event
+- a physical clue
+- a location or object
+- what happened during the storm
+
+Examples of effective questions:
+
+- Who had access to the captain's cabin?
+- What does Toby do on deck?
+- Did anyone leave the ship during the storm?
+- Was anyone seen near the porthole?
+- What evidence is tied to Toby?
+
+The backend checks the message against the case data and unlocks evidence when the question matches a clue or structured fact.
+
+### 4. Evidence discovery
+
+As the player investigates, evidence items are revealed when the question matches them.
+
+These are the main clues in the pirate case:
+
+- wire_tool
+- watch_log
+- torn_cloth
+- fisherman_report
+- dice_witnesses
+- kitchen_log
+- boatswain_account
+
+Evidence is intentionally structured so the player can piece together the truth without the answer being exposed directly.
+
+### 5. Use the suspect board
+
+The suspect board shows each crew member and their basic profile.
+
+The current suspects are:
+
+- Quartermaster Finch
+- Cook Mags Halloway
+- Cabin Boy Pip
+- Rigger Toby Vane
+
+Each suspect has:
+
+- a bio
+- a motive hint
+- an alibi
+- an initial suspicion rating
+
+The question is not to guess randomly. It is to test which suspect's motive, access, timing, and evidence line up.
+
+## Core Rules
+
+### Question limit
+
+Each case has a limited number of questions.
+
+The pirate case starts with 15 questions.
+
+When the counter reaches zero, the player can no longer ask investigative questions.
+
+### Server-side authority
+
+The backend controls:
+
+- session creation
+- question counting
+- evidence discovery
+- accusation validity
+- scoring
+- game status
+
+The frontend only exposes the public case details and user input. The answer key remains in the backend.
+
+### No direct answer leakage
+
+The LLM is instructed to stay in character and not reveal the solution directly.
+
+Instead, it responds as First Mate Salty Sable, providing clues, redirecting the player, and guiding the investigation without stating the culprit outright.
+
+## How to Win
+
+When the player believes they know the culprit, they click Make Accusation.
+
+The accusation form asks for:
+
+- culprit
+- method
+- motive
+- supporting evidence checkboxes
+
+The backend then scores the submission.
+
+### Scoring system
+
+The total score is out of 25 points.
+
+- Identity: 10 points
+- Method: 5 points
+- Motive: 5 points
+- Evidence: 5 points
+
+A correct accusation can score all 25 points.
+
+### Correct solution for the pirate case
+
+The correct culprit is Toby Vane.
+
+The correct method is:
+
+- Toby picked the cabin lock during his watch shift
+- used a wire tool to unlock it
+- used the storm to mask the noise
+- lowered the stolen chest through the porthole to a waiting rowboat
+
+The correct motive is:
+
+- Toby was paid by rival Captain Voss to weaken the Crimson Gull and steal the treasure
+
+The strongest evidence is:
+
+- wire_tool
+- watch_log
+- torn_cloth
+- fisherman_report
+
+## What Counts as a Good Accusation
+
+A strong accusation includes all of the following:
+
+- the correct suspect
+- a method consistent with the evidence
+- a motive that matches the case
+- enough supporting evidence to back the conclusion
+
+A wrong accusation may still earn partial credit, but it does not win the game.
+
+## Win and Lose Conditions
+
+### Win
+
+The round is won when the player submits a correct accusation and the score reaches the maximum outcome.
+
+### Lose
+
+The round is lost when:
+
+- the accusation is incorrect
+- the current evidence does not support the conclusion
+- the player runs out of questions before solving the case
+
+## Tips for Playing
+
+- Start with the suspects with the strongest motive and access.
+- Ask about the timeline and who had access to the cabin.
+- Pay attention to the exact wording of evidence descriptions.
+- The right answer is usually built from several clues together, not one single fact.
+- Do not accuse too early; the game rewards evidence-based reasoning.
+- The storm, porthole, and watch shift are key operational clues.
+
+## Current Known Status
+
+At the time of writing:
+
+- Pirate mode is the active, fully playable case.
+- Noir mode is included as a future path but is not yet the complete game state.
+- The project is structured so the backend remains the truth source for the mystery and scoring.
+
+## Local Setup
+
+### Backend
+
+From the project root:
 
 ```powershell
-.venv\Scripts\Activate.ps1
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r backend\requirements.txt
+python backend\app.py
 ```
 
-The project has also been tested with Python 3.9.11. Flask requires a supported Python installation.
+The backend listens on:
 
-### Environment Variables
+- http://127.0.0.1:5000
 
-Create a `.env` file in the project root when needed:
+### Frontend
+
+From the frontend folder:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend runs in Vite and points to the Flask backend through the local proxy.
+
+### Environment variables
+
+Create a `.env` file at the project root with the LLM settings for local testing:
 
 ```env
 FLASK_ENV=development
@@ -37,169 +288,33 @@ FLASK_HOST=127.0.0.1
 FLASK_PORT=5000
 FLASK_DEBUG=false
 
-# Optional. If omitted, the backend uses its deterministic fallback response.
-LLM_API_KEY=your-api-key
-LLM_API_URL=https://api.openai.com/v1/chat/completions
-LLM_MODEL=gpt-4o-mini
+LLM_API_KEY=your-groq-or-openai-key
+LLM_MODEL=openai/gpt-oss-20b
+LLM_API_URL=https://api.groq.com/openai/v1/chat/completions
 ```
 
-Never commit `.env` or place API keys in frontend code. The existing `.gitignore` excludes `.env`.
+Note: `.env` should never be committed to version control.
 
-## Run the Backend
+## Deployment Notes
 
-From the project root:
+The app is designed to separate the frontend and backend:
 
-```powershell
-python backend\app.py
-```
+- Frontend can be hosted on Vercel
+- Backend can be hosted on Render or another Python hosting service
+- The frontend reads the live backend URL from `VITE_API_URL`
 
-The server runs at `http://127.0.0.1:5000` by default. Keep the server running in one terminal while making API requests or running the test suite.
+This keeps the secret answer key and LLM token off the browser and out of the public client code.
 
-## API Endpoints
+## Quick Summary
 
-All endpoints use the `/api` prefix.
+AI Detective is a deduction game about solving a theft using limited questions, discovered evidence, and a final accusation.
 
-### `GET /api/health`
+The play loop is:
 
-Checks that the Flask application is running.
+- start case
+- investigate suspects and clues
+- gather evidence
+- accuse the right culprit
+- win by matching the hidden truth
 
-Example response:
-
-```json
-{
-  "status": "ok"
-}
-```
-
-### `POST /api/session`
-
-Creates a new in-memory game session. No request body is required.
-
-Example request:
-
-```json
-{}
-```
-
-Example response:
-
-```json
-{
-  "sessionId": "generated-uuid",
-  "title": "The Vanished Doubloons of the Crimson Gull",
-  "briefing": "...",
-  "suspects": [],
-  "questionsRemaining": 15
-}
-```
-
-The response contains only public case information. It does not include the answer key, suspect truth values, hidden evidence unlock conditions, or scoring data.
-
-Sessions are lost when the Flask process restarts.
-
-### `POST /api/chat`
-
-Asks a question about the case. The server validates the session, checks that the game is still investigating, decrements the question counter, stores the question, discovers matching authored evidence, and returns a controlled response.
-
-Request:
-
-```json
-{
-  "sessionId": "generated-uuid",
-  "message": "Where was Toby during the storm?"
-}
-```
-
-Response:
-
-```json
-{
-  "response": "...",
-  "questionsRemaining": 14,
-  "newEvidence": [],
-  "discoveredEvidenceIds": [],
-  "gameStatus": "investigating"
-}
-```
-
-An empty message is rejected with `400`. An unknown session returns `404`. A session with no questions remaining returns `409` and does not consume another question.
-
-The LLM receives only controlled case context. The answer key and hidden rules are never sent to it. Without `LLM_API_KEY`, the backend uses a deterministic fallback so the API can be tested without an external LLM service.
-
-### `POST /api/submit`
-
-Scores an accusation against the server-side answer key.
-
-Request:
-
-```json
-{
-  "sessionId": "generated-uuid",
-  "culprit": "toby",
-  "method": "Toby used a wire tool to pick the cabin lock during the storm and lowered the chest through the porthole to a rowboat.",
-  "motive": "Captain Voss paid Toby to steal the treasure and weaken the Crimson Gull.",
-  "evidence": [
-    "wire_tool",
-    "watch_log",
-    "torn_cloth",
-    "fisherman_report"
-  ]
-}
-```
-
-Response:
-
-```json
-{
-  "score": 25,
-  "breakdown": {
-    "identity": 10,
-    "method": 5,
-    "motive": 5,
-    "evidence": 5
-  },
-  "gameStatus": "solved"
-}
-```
-
-The scoring service reads the answer key on the backend and returns only the score, neutral breakdown categories, and game status. The answer key is never returned to the browser.
-
-## Run the API Tests
-
-Start the backend first, then open a second terminal from the project root and run:
-
-```powershell
-python test_api.py
-```
-
-The test suite checks health, session creation, chat, evidence discovery, prompt-injection resistance, unsupported-fact resistance, invalid requests, and accusation scoring.
-
-One test-suite expectation may need updating as the project evolves: chat requests after the question counter reaches zero are correctly rejected with `409`, as required by the server-authoritative prompt limit.
-
-## Security Boundary
-
-The following data remains backend-only:
-
-- `answerKey`
-- Suspect `truth` values
-- Hidden evidence unlock conditions
-- Internal scoring rules
-- Complete mystery JSON
-- LLM API credentials
-
-Do not add `backend/data` to a public static directory, import the mystery JSON into frontend code, or store the answer key in browser storage.
-
-## Work In Progress
-
-Not implemented yet:
-
-- React + Vite frontend
-- Chat and accusation user interface
-- Persistent sessions or database storage
-- Authentication or leaderboard
-- Production WSGI deployment
-- Final LLM provider integration and response validation
-- Animated detective character
-- Audio, voice, and ambient music
-- Final verdict animations
-- Comprehensive automated backend test files
+If you read the briefing, ask smart questions, and track the evidence, the culprit becomes clear.

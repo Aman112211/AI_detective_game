@@ -76,7 +76,7 @@ def _extract_openai_content(result):
 def generate_response(message, context):
     api_key = os.getenv("LLM_API_KEY") or os.getenv("GOOGLE_API_KEY")
     api_url = os.getenv("LLM_API_URL", "https://api.groq.com/openai/v1/chat/completions")
-    model = os.getenv("LLM_MODEL", "llama-3.1-8b-instant")
+    model = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
     if not api_key:
         return _fallback_response(message, context)
 
