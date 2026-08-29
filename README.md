@@ -1,35 +1,42 @@
 # AI Detective
 
-AI Detective is a work-in-progress mystery game. The current implementation contains the Flask backend API only. The React frontend, production persistence, and final game presentation are not implemented yet.
+AI Detective is a full-stack mystery game with a Flask API backend and a React + Vite frontend.
 
-The frozen mystery is stored server-side in `backend/data/mystery-solution.json`. It is the source of truth for the case and must not be copied into frontend code or exposed by an API response.
+## What’s implemented
 
-## Current Features
-
-- Flask REST API
-- CORS support for local frontend development
-- Environment variable loading with `python-dotenv`
-- In-memory game sessions
-- Server-authoritative question counter
-- Controlled evidence discovery
-- Optional LLM response adapter
-- Deterministic in-character fallback when no LLM key is configured
+- Flask REST API (`/api/health`, `/api/session`, `/api/chat`, `/api/submit`)
+- React single-page game UI (case selection, briefing, interrogation log, evidence board, accusation modal, scoring screen)
+- Two playable case modes: `pirate` and `noir`
+- In-memory server-side sessions with question limits and evidence discovery
 - Server-side accusation scoring
+- Optional LLM adapter with deterministic fallback when `LLM_API_KEY` is not set
 
-## Setup
+## Project structure
 
-From the project root, create or activate a virtual environment and install the backend dependencies:
+- `/backend` — Flask API, routes, and game logic
+- `/backend/data` — server-side mystery files (source of truth)
+- `/frontend` — React + Vite client
+- `/test_api.py` — API smoke/integration test script
 
-```powershell
-.venv\Scripts\Activate.ps1
-python -m pip install -r backend\requirements.txt
+## Prerequisites
+
+- Python 3.9+
+- Node.js 18+
+- npm
+
+## Backend setup
+
+From the repository root:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows PowerShell: .venv\Scripts\Activate.ps1
+pip install -r backend/requirements.txt
 ```
 
-The project has also been tested with Python 3.9.11. Flask requires a supported Python installation.
+### Backend environment variables
 
-### Environment Variables
-
-Create a `.env` file in the project root when needed:
+Create a `.env` in the repository root (optional defaults shown):
 
 ```env
 FLASK_ENV=development
@@ -37,69 +44,71 @@ FLASK_HOST=127.0.0.1
 FLASK_PORT=5000
 FLASK_DEBUG=false
 
-# Optional. If omitted, the backend uses its deterministic fallback response.
-LLM_API_KEY=your-api-key
+# Optional LLM config
+LLM_API_KEY=
 LLM_API_URL=https://api.openai.com/v1/chat/completions
 LLM_MODEL=gpt-4o-mini
 ```
 
-Never commit `.env` or place API keys in frontend code. The existing `.gitignore` excludes `.env`.
+Run the backend:
 
-## Run the Backend
-
-From the project root:
-
-```powershell
-python backend\app.py
+```bash
+python backend/app.py
 ```
 
-The server runs at `http://127.0.0.1:5000` by default. Keep the server running in one terminal while making API requests or running the test suite.
+## Frontend setup
 
-## API Endpoints
+In a second terminal:
 
-All endpoints use the `/api` prefix.
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Optional frontend env (`frontend/.env`):
+
+```env
+VITE_API_URL=http://127.0.0.1:5000
+```
+
+Vite dev server typically runs at `http://127.0.0.1:5173`.
+
+## API overview
+
+All endpoints are prefixed with `/api`.
 
 ### `GET /api/health`
-
-Checks that the Flask application is running.
-
-Example response:
+Returns:
 
 ```json
-{
-  "status": "ok"
-}
+{ "status": "ok" }
 ```
 
 ### `POST /api/session`
+Creates a new session.
 
-Creates a new in-memory game session. No request body is required.
-
-Example request:
-
-```json
-{}
-```
-
-Example response:
+Request body (optional):
 
 ```json
-{
-  "sessionId": "generated-uuid",
-  "title": "The Vanished Doubloons of the Crimson Gull",
-  "briefing": "...",
-  "suspects": [],
-  "questionsRemaining": 15
-}
+{ "mode": "pirate" }
 ```
 
-The response contains only public case information. It does not include the answer key, suspect truth values, hidden evidence unlock conditions, or scoring data.
+Supported modes: `pirate`, `noir` (invalid values fall back to `pirate`).
 
-Sessions are lost when the Flask process restarts.
+Response includes:
+
+- `sessionId`
+- `mode`
+- `title`
+- `briefing`
+- `setting`
+- `detectiveCharacter`
+- `suspects`
+- `questionsRemaining`
 
 ### `POST /api/chat`
-
-Asks a question about the case. The server validates the session, checks that the game is still investigating, decrements the question counter, stores the question, discovers matching authored evidence, and returns a controlled response.
+Asks a question in an active session.
 
 Request:
 
@@ -110,25 +119,22 @@ Request:
 }
 ```
 
-Response:
+Response includes:
 
-```json
-{
-  "response": "...",
-  "questionsRemaining": 14,
-  "newEvidence": [],
-  "discoveredEvidenceIds": [],
-  "gameStatus": "investigating"
-}
-```
+- `response`
+- `questionsRemaining`
+- `newEvidence`
+- `discoveredEvidenceIds`
+- `gameStatus`
 
-An empty message is rejected with `400`. An unknown session returns `404`. A session with no questions remaining returns `409` and does not consume another question.
+Validation behavior:
 
-The LLM receives only controlled case context. The answer key and hidden rules are never sent to it. Without `LLM_API_KEY`, the backend uses a deterministic fallback so the API can be tested without an external LLM service.
+- Missing/invalid `sessionId` or empty `message` → `400`
+- Unknown session → `404`
+- Finished session or no questions remaining → `409`
 
 ### `POST /api/submit`
-
-Scores an accusation against the server-side answer key.
+Submits a final accusation.
 
 Request:
 
@@ -136,14 +142,9 @@ Request:
 {
   "sessionId": "generated-uuid",
   "culprit": "toby",
-  "method": "Toby used a wire tool to pick the cabin lock during the storm and lowered the chest through the porthole to a rowboat.",
-  "motive": "Captain Voss paid Toby to steal the treasure and weaken the Crimson Gull.",
-  "evidence": [
-    "wire_tool",
-    "watch_log",
-    "torn_cloth",
-    "fisherman_report"
-  ]
+  "method": "...",
+  "motive": "...",
+  "evidence": ["wire_tool", "watch_log"]
 }
 ```
 
@@ -151,55 +152,35 @@ Response:
 
 ```json
 {
-  "score": 25,
+  "score": 20,
   "breakdown": {
     "identity": 10,
     "method": 5,
     "motive": 5,
-    "evidence": 5
+    "evidence": 0
   },
-  "gameStatus": "solved"
+  "gameStatus": "investigating"
 }
 ```
 
-The scoring service reads the answer key on the backend and returns only the score, neutral breakdown categories, and game status. The answer key is never returned to the browser.
+A perfect score sets `gameStatus` to `solved`.
 
-## Run the API Tests
+## Running tests
 
-Start the backend first, then open a second terminal from the project root and run:
+Start the backend first, then from repo root:
 
-```powershell
+```bash
 python test_api.py
 ```
 
-The test suite checks health, session creation, chat, evidence discovery, prompt-injection resistance, unsupported-fact resistance, invalid requests, and accusation scoring.
+## Security boundary
 
-One test-suite expectation may need updating as the project evolves: chat requests after the question counter reaches zero are correctly rejected with `409`, as required by the server-authoritative prompt limit.
-
-## Security Boundary
-
-The following data remains backend-only:
+The following remain backend-only and must not be exposed to frontend code:
 
 - `answerKey`
-- Suspect `truth` values
-- Hidden evidence unlock conditions
-- Internal scoring rules
-- Complete mystery JSON
-- LLM API credentials
+- hidden evidence unlock rules
+- internal scoring rules
+- complete mystery JSON internals
+- LLM credentials
 
-Do not add `backend/data` to a public static directory, import the mystery JSON into frontend code, or store the answer key in browser storage.
-
-## Work In Progress
-
-Not implemented yet:
-
-- React + Vite frontend
-- Chat and accusation user interface
-- Persistent sessions or database storage
-- Authentication or leaderboard
-- Production WSGI deployment
-- Final LLM provider integration and response validation
-- Animated detective character
-- Audio, voice, and ambient music
-- Final verdict animations
-- Comprehensive automated backend test files
+Do not commit `.env` files or API keys.
