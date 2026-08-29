@@ -91,10 +91,10 @@ function CharacterDisplay({ selectedMode, talking }) {
 function PirateCharacter({ talking }) {
   const idleLayers = [
     { key: "body", src: new URL("./assets/pirate/body.png", import.meta.url).href },
-    { key: "hat", src: new URL("./assets/pirate/hat.png", import.meta.url).href },
     { key: "head", src: new URL("./assets/pirate/head.png", import.meta.url).href },
     { key: "left_hand", src: new URL("./assets/pirate/left_hand.png", import.meta.url).href },
     { key: "right_hand", src: new URL("./assets/pirate/right_hand.png", import.meta.url).href },
+    { key: "hat", src: new URL("./assets/pirate/hat.png", import.meta.url).href },
   ];
 
   const mouthFrames = [
@@ -121,8 +121,9 @@ function PirateCharacter({ talking }) {
 
   const visibleLayers = talking
     ? [
-        ...idleLayers,
+        ...idleLayers.slice(0, 4),
         mouthFrames[mouthIndex],
+        idleLayers[4],
       ]
     : idleLayers;
 
