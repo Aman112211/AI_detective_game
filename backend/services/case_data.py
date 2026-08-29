@@ -1,5 +1,4 @@
 import json
-from collections import Counter
 from pathlib import Path
 import re
 
@@ -43,6 +42,7 @@ STOP_WORDS = {
     "why",
     "s",
 }
+MIN_SINGLE_TRIGGER_LENGTH = 4
 
 
 def load_case(mode=None):
@@ -76,103 +76,83 @@ def public_case(case):
 def _words(value):
     return {
         word
-        for word in re.findall(r"[a-z0-9]+", value.lower())
+        for word in re.findall(r"[a-z0-9]+", str(value).lower())
         if word not in STOP_WORDS
     }
 
 
 def _normalized_text(value):
-    return re.sub(r"[^a-z0-9]+", " ", str(value).lower()).strip()
+    text = str(value).lower()
+    text = re.sub(r"'s\b", "", text)
+    text = re.sub(r"s'\b", "s", text)
+    return re.sub(r"[^a-z0-9]+", " ", text).strip()
 
 
-def _contains_phrase(text, phrase):
-    return _normalized_text(phrase) in _normalized_text(text)
+def _message_word_list(message):
+    return _normalized_text(message).split()
+
+
+def _phrase_matches_message(message, phrase):
+    normalized_phrase = _normalized_text(phrase)
+    if not normalized_phrase:
+        return False
+
+    phrase_words = normalized_phrase.split()
+    message_words = _message_word_list(message)
+    if not message_words:
+        return False
+
+    if len(phrase_words) == 1:
+        word = phrase_words[0]
+        if len(word) < MIN_SINGLE_TRIGGER_LENGTH or word in STOP_WORDS:
+            return False
+        return word in message_words
+
+    for index in range(len(message_words) - len(phrase_words) + 1):
+        if message_words[index : index + len(phrase_words)] == phrase_words:
+            return True
+    return False
+
+
+def _trigger_phrases_for_evidence(evidence_id, rules):
+    if not isinstance(rules, dict):
+        return []
+
+    trigger_phrases = rules.get("triggerPhrases", [])
+    if isinstance(trigger_phrases, list):
+        return [str(phrase) for phrase in trigger_phrases if phrase]
+
+    return []
 
 
 def discover_evidence(case, message, discovered_ids):
-    message_words = _words(message)
-    normalized_message = _normalized_text(message)
     discovered = set(discovered_ids)
-    evidence_items = case.get("evidence", [])
     evidence_discovery = case.get("evidenceDiscovery", {})
-
-    if not evidence_items:
+    if not isinstance(evidence_discovery, dict):
         return []
 
-    candidate_phrases_by_evidence = {}
-    word_usage = Counter()
-
-    for evidence in evidence_items:
-        evidence_id = evidence.get("id")
-        if not evidence_id:
-            continue
-        phrases = []
-        for key in ("description", "pointsTo", "id", "name"):
-            value = evidence.get(key)
-            if value:
-                phrases.append(str(value))
-
-        if isinstance(evidence_discovery, dict):
-            rules = evidence_discovery.get(evidence_id, {})
-            if isinstance(rules, dict):
-                for condition in rules.get("unlockConditions", []):
-                    if isinstance(condition, str):
-                        phrases.append(str(condition))
-
-        candidate_phrases = set()
-        for phrase in phrases:
-            cleaned = _normalized_text(phrase)
-            words = re.findall(r"[a-z0-9]+", cleaned)
-            candidate_phrases.add(cleaned)
-            for index in range(len(words)):
-                for end in range(index + 1, min(index + 4, len(words)) + 1):
-                    candidate_phrases.add(" ".join(words[index:end]))
-
-        candidate_phrases_by_evidence[evidence_id] = candidate_phrases
-        for word in _words(" ".join(candidate_phrases)):
-            word_usage[word] += 1
-
     newly_discovered = []
-    for evidence in evidence_items:
+    for evidence in case.get("evidence", []):
         evidence_id = evidence.get("id")
-        if evidence_id in discovered or not evidence_id:
+        if not evidence_id or evidence_id in discovered:
             continue
 
-        phrase_hits = [
-            phrase for phrase in candidate_phrases_by_evidence.get(evidence_id, set())
-            if phrase and phrase in normalized_message
-        ]
-        if phrase_hits:
-            newly_discovered.append(evidence_id)
+        rules = evidence_discovery.get(evidence_id, {})
+        trigger_phrases = _trigger_phrases_for_evidence(evidence_id, rules)
+        if not trigger_phrases:
             continue
 
-        distinctive_words = {
-            word
-            for word in _words(" ".join(candidate_phrases_by_evidence.get(evidence_id, set())))
-            if word_usage.get(word, 0) <= 2
-        }
-        if message_words & distinctive_words:
+        if any(_phrase_matches_message(message, phrase) for phrase in trigger_phrases):
             newly_discovered.append(evidence_id)
-
-    if newly_discovered:
-        return newly_discovered
-
-    evidence_discovery = case.get("evidenceDiscovery", {})
-    if isinstance(evidence_discovery, dict):
-        for evidence_id, rules in evidence_discovery.items():
-            if evidence_id in discovered or not isinstance(rules, dict):
-                continue
-            conditions = rules.get("unlockConditions", [])
-            if isinstance(conditions, list) and any(
-                _normalized_text(condition) in normalized_message for condition in conditions
-            ):
-                newly_discovered.append(evidence_id)
 
     return newly_discovered
 
 
-def controlled_context(case, message, discovered_ids):
+def controlled_context(case, message, discovered_ids, context_evidence_ids=None):
     message_words = _words(message)
+    evidence_ids_for_context = (
+        context_evidence_ids if context_evidence_ids is not None else discovered_ids
+    )
     context = {
         "briefing": case.get("briefing", ""),
         "suspects": [],
@@ -209,7 +189,7 @@ def controlled_context(case, message, discovered_ids):
             )
 
     evidence_by_id = {item["id"]: item for item in case.get("evidence", [])}
-    for evidence_id in discovered_ids:
+    for evidence_id in evidence_ids_for_context:
         evidence = evidence_by_id.get(evidence_id)
         if evidence:
             context["discoveredEvidence"].append(

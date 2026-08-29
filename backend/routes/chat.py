@@ -38,10 +38,20 @@ def chat():
         case, message, session["discoveredEvidenceIds"]
     )
     all_discovered_ids = session["discoveredEvidenceIds"] + new_evidence_ids
-    context = controlled_context(case, message, all_discovered_ids)
+    context = controlled_context(
+        case,
+        message,
+        all_discovered_ids,
+        context_evidence_ids=new_evidence_ids,
+    )
 
     try:
-        response_text = generate_response(message, context)
+        response_text = generate_response(
+            message,
+            context,
+            ai_instructions=case.get("aiInstructions", ""),
+            character_name=case.get("detectiveCharacter", {}).get("name", "the detective"),
+        )
     except LlmError as exc:
         return jsonify({"error": str(exc)}), 502
 

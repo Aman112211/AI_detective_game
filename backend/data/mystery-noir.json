@@ -82,6 +82,72 @@
       "clears": true
     }
   ],
+  "evidenceDiscovery": {
+    "poison_receipt": {
+      "triggerPhrases": [
+        "poison receipt",
+        "rat poison",
+        "arsenic",
+        "doyle coat",
+        "hardware store",
+        "coat pocket"
+      ]
+    },
+    "glass_residue": {
+      "triggerPhrases": [
+        "whiskey glass",
+        "glass residue",
+        "lab residue",
+        "doyle desk",
+        "desk drawer"
+      ]
+    },
+    "survivor_clause": {
+      "triggerPhrases": [
+        "survivor clause",
+        "partnership contract",
+        "share sale",
+        "partnership agreement",
+        "ownership clause"
+      ]
+    },
+    "janitor_account": {
+      "triggerPhrases": [
+        "janitor",
+        "night janitor",
+        "doyle building",
+        "still in the building",
+        "doyle left"
+      ]
+    },
+    "dinner_witnesses": {
+      "triggerPhrases": [
+        "eleanor alibi",
+        "dinner party",
+        "eleanor party",
+        "eleanor whereabouts",
+        "dinner guests"
+      ]
+    },
+    "security_log": {
+      "triggerPhrases": [
+        "sam alibi",
+        "security log",
+        "signed out",
+        "front desk log",
+        "sam left"
+      ]
+    },
+    "letters_addressee": {
+      "triggerPhrases": [
+        "love letters",
+        "rita letters",
+        "rita desk",
+        "letters addressee",
+        "rita affair"
+      ]
+    }
+  },
   "redHerrings": [
     "Eleanor's divorce dispute is a believable motive, but the dinner party alibi clears her.",
     "Sam's plagiarism scandal is a real and strong motive, but the security log puts him out of the building before the death.",

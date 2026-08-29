@@ -82,6 +82,87 @@
       "clears": true
     }
   ],
+  "evidenceDiscovery": {
+    "wire_tool": {
+      "triggerPhrases": [
+        "sea chest",
+        "toby chest",
+        "toby sea chest",
+        "wire tool",
+        "lock pick",
+        "lock picking",
+        "toby tool"
+      ]
+    },
+    "watch_log": {
+      "triggerPhrases": [
+        "night watch",
+        "watch schedule",
+        "watch log",
+        "shift swap",
+        "toby watch",
+        "toby shift",
+        "watch shift"
+      ]
+    },
+    "torn_cloth": {
+      "triggerPhrases": [
+        "porthole",
+        "porthole latch",
+        "torn cloth",
+        "captain voss",
+        "voss crew"
+      ]
+    },
+    "fisherman_report": {
+      "triggerPhrases": [
+        "rowboat",
+        "fisherman",
+        "boat leaving",
+        "leave the ship",
+        "leaving the ship",
+        "around 2am",
+        "rival tattoo",
+        "outside witness"
+      ]
+    },
+    "dice_witnesses": {
+      "triggerPhrases": [
+        "finch alibi",
+        "finch dicing",
+        "dicing with",
+        "finch whereabouts",
+        "finch galley",
+        "about finch"
+      ]
+    },
+    "kitchen_log": {
+      "triggerPhrases": [
+        "kitchen log",
+        "galley log",
+        "mags kitchen",
+        "mags storm",
+        "mags whereabouts",
+        "mags galley",
+        "cook log",
+        "was mags",
+        "mags during"
+      ]
+    },
+    "boatswain_account": {
+      "triggerPhrases": [
+        "pip cabin",
+        "pip lantern",
+        "pip berth",
+        "pip whereabouts",
+        "pip near",
+        "boatswain",
+        "dropped lantern",
+        "crew berth",
+        "captain cabin"
+      ]
+    }
+  },
   "redHerrings": [
     "Finch's gambling debt is real and gives him a believable motive, but his alibi (witnessed dicing) clears him.",
     "Mags's grievance over her share is real, but the kitchen log timestamp puts her elsewhere before the theft window.",

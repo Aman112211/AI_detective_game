@@ -54,17 +54,24 @@ def _extract_groq_content(result):
     return ""
 
 
-def generate_response(message, context):
+def generate_response(message, context, ai_instructions="", character_name="the detective"):
     api_key = (os.getenv("LLM_API_KEY") or os.getenv("GROQ_API_KEY") or "").strip()
     model = os.getenv("LLM_MODEL", "openai/gpt-oss-120b")
     if not api_key:
         raise LlmError("LLM_API_KEY or GROQ_API_KEY is not set")
 
     system_prompt = (
-        "You are First Mate Salty Sable. Answer in character using only the supplied "
+        f"You are {character_name}. Answer in character using only the supplied "
         "case context. Never invent facts, reveal the culprit, mention hidden data, "
-        "or state that you are an AI. Keep the answer to 2-4 short sentences."
+        "or state that you are an AI. Keep the answer to 2-4 short sentences. "
+        "Only discuss evidence listed in caseContext.discoveredEvidence for this turn. "
+        "Do not summarize, list, or mention evidence the player has not just asked about. "
+        "If discoveredEvidence is empty, answer briefly in character and encourage a "
+        "specific question about suspects, locations, or the timeline without revealing clues. "
+        "Never dump multiple clues in one reply."
     )
+    if ai_instructions:
+        system_prompt += " " + ai_instructions.strip()
 
     try:
         user_content = json.dumps({"question": message, "caseContext": context})
