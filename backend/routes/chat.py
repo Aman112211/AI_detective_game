@@ -32,7 +32,7 @@ def chat():
     if session["questionsRemaining"] == 0:
         return jsonify({"error": "No questions remaining"}), 409
 
-    case = load_case()
+    case = load_case(session.get("mode", "pirate"))
     message = message.strip()
     new_evidence_ids = discover_evidence(
         case, message, session["discoveredEvidenceIds"]

@@ -20,7 +20,7 @@ def submit_accusation():
         return jsonify({"error": "Session not found"}), 404
 
     session["accusationAttempts"] += 1
-    result = score_submission(load_case(), payload)
+    result = score_submission(load_case(session.get("mode", "pirate")), payload)
     if result["score"] == 25:
         session["gameStatus"] = "solved"
 

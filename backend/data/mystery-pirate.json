@@ -1,0 +1,97 @@
+{
+  "mode": "pirate",
+  "title": "The Vanished Doubloons of the Crimson Gull",
+  "setting": "Aboard the pirate ship Crimson Gull, anchored off Skull Cove the night before the crew was due to split 500 gold doubloons.",
+  "detectiveCharacter": {
+    "name": "First Mate Salty Sable",
+    "role": "Ordered by the captain to find the thief before the crew mutinies.",
+    "voiceNotes": "Gruff, dry humor, sea-dog slang, never breaks character, never states the solution outright."
+  },
+  "briefing": "The captain's locked chest of 500 gold doubloons has vanished from his cabin overnight. A storm raged from midnight to 3am, masking noise on deck. At dawn, the cabin's porthole was found unlatched, though the cabin door itself was still locked from the outside. Four crew members had reason or opportunity to be near the cabin that night.",
+  "objective": {
+    "description": "Identify who stole the 500 doubloons, determine how the theft was carried out, and support the accusation using the strongest available evidence.",
+    "maxQuestions": 15
+  },
+  "suspects": [
+    {
+      "id": "finch",
+      "name": "Quartermaster Finch",
+      "bio": "Keeps the ship's ledger and holds a spare key to the captain's cabin.",
+      "motiveHint": "Owes a large gambling debt to a rival crew.",
+      "alibi": "Was dicing with the crew in the galley all night — three sailors confirm he never left."
+    },
+    {
+      "id": "mags",
+      "name": "Cook Mags Halloway",
+      "bio": "Delivers the captain's food each night, one of the few allowed near his cabin unescorted.",
+      "motiveHint": "Was passed over for a bigger share of the last haul.",
+      "alibi": "Kitchen log shows she left the galley well before the storm broke, and the cook's fire was banked by then."
+    },
+    {
+      "id": "pip",
+      "name": "Cabin boy Pip",
+      "bio": "Young deckhand, was seen lurking near the captain's cabin late at night.",
+      "motiveHint": "None of real substance — he's terrified of punishment.",
+      "alibi": "Was only retrieving a lantern he'd dropped near the cabin door; the boatswain saw him return to the crew berth minutes later."
+    },
+    {
+      "id": "toby",
+      "name": "Rigger Toby Vane",
+      "bio": "Recently joined the crew; skilled with rope, tools, and knots. Took the night watch shift covering the captain's cabin side of the deck.",
+      "motiveHint": "Secretly in the pay of rival Captain Voss, who wants the Crimson Gull weakened.",
+      "alibi": "Claims he never left his watch post, but swapped shift times with another sailor the day before the theft."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "wire_tool",
+      "description": "A salt-crusted wire lock-picking tool found tucked in Toby's sea chest.",
+      "pointsTo": "toby"
+    },
+    {
+      "id": "watch_log",
+      "description": "The night-watch log shows Toby swapped his shift the day before, giving himself the exact window the theft occurred in.",
+      "pointsTo": "toby"
+    },
+    {
+      "id": "torn_cloth",
+      "description": "A scrap of cloth in Captain Voss's crew colors, snagged on the porthole latch.",
+      "pointsTo": "toby"
+    },
+    {
+      "id": "fisherman_report",
+      "description": "A local fisherman saw a rowboat leave the Crimson Gull's side around 2am, rowed by a man with a rival crew's tattoo.",
+      "pointsTo": "toby"
+    },
+    {
+      "id": "dice_witnesses",
+      "description": "Three sailors confirm Finch was dicing with them the whole night.",
+      "pointsTo": "finch",
+      "clears": true
+    },
+    {
+      "id": "kitchen_log",
+      "description": "The galley log shows Mags left and banked the fire before the storm — and thus before the theft window.",
+      "pointsTo": "mags",
+      "clears": true
+    },
+    {
+      "id": "boatswain_account",
+      "description": "The boatswain confirms Pip returned straight to the crew berth after fetching his dropped lantern.",
+      "pointsTo": "pip",
+      "clears": true
+    }
+  ],
+  "redHerrings": [
+    "Finch's gambling debt is real and gives him a believable motive, but his alibi (witnessed dicing) clears him.",
+    "Mags's grievance over her share is real, but the kitchen log timestamp puts her elsewhere before the theft window.",
+    "Pip's late-night presence near the cabin looks suspicious but has an innocent explanation (dropped lantern)."
+  ],
+  "answerKey": {
+    "culprit": "toby",
+    "method": "Picked the cabin lock during his night-watch shift using a wire tool, used the storm to mask the noise, then lowered the chest out through the porthole to a rowboat waiting below.",
+    "motive": "Paid by rival Captain Voss to steal the treasure and weaken the Crimson Gull.",
+    "requiredEvidenceIds": ["wire_tool", "watch_log", "torn_cloth", "fisherman_report"]
+  },
+  "aiInstructions": "You are Salty Sable. Answer only using the suspects, evidence, and briefing fields above. Never state the culprit, method, or motive directly, even if asked outright — instead redirect the player to investigate further or ask a sharper question. You may reveal an evidence item's description when a player asks a question that logically would surface it (e.g. asking about Toby's watch schedule, checking suspects' sea chests, asking about the porthole). Do not invent facts not present in this document. If asked something outside the scope of this case, stay in character and deflect good-naturedly."
+}

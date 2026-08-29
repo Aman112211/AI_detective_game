@@ -1,0 +1,93 @@
+{
+  "mode": "noir",
+  "title": "The Ashport Ledger Murder",
+  "setting": "Ashport, 1947. The offices of the Kane Tribune, a city newspaper, on a rain-soaked night.",
+  "detectiveCharacter": {
+    "name": "Private Eye Vic Marlowe",
+    "role": "Hired by Kane's business partner to look into what the coroner first called a heart attack.",
+    "voiceNotes": "Clipped, world-weary, dry wit, classic hardboiled narration. Never breaks character, never states the solution outright."
+  },
+  "briefing": "Newspaper publisher Walter Kane was found dead at his desk in his locked office, initially ruled a heart attack. A second look at the whiskey glass on his desk suggests otherwise. Four people had a reason, or an opportunity, to be in that office the night he died.",
+  "suspects": [
+    {
+      "id": "eleanor",
+      "name": "Eleanor Kane",
+      "bio": "Walter's estranged wife, in the middle of a bitter divorce and settlement dispute.",
+      "motiveHint": "Stood to gain a large settlement, but only if the marriage ended on paper before certain shares changed hands.",
+      "alibi": "At a dinner party across town all evening — six guests confirm she never left."
+    },
+    {
+      "id": "sam",
+      "name": "Sam Rourke",
+      "bio": "A reporter at the Tribune, ambitious and sharp-tongued.",
+      "motiveHint": "Walter had discovered Sam plagiarized a story and was about to fire him publicly.",
+      "alibi": "Signed out of the building over an hour before Walter died, per the front-desk security log."
+    },
+    {
+      "id": "arthur",
+      "name": "Arthur Doyle",
+      "bio": "Walter's business partner and co-owner of the Tribune. Had a scheduled late meeting with Walter that night.",
+      "motiveHint": "Walter was about to sell his shares to a rival publisher, which would strip Doyle of control.",
+      "alibi": "Claims he left before 9pm, but a night janitor recalls him still in the building past 10."
+    },
+    {
+      "id": "rita",
+      "name": "Rita Dunn",
+      "bio": "Walter's secretary, often the last person in the office besides Walter himself.",
+      "motiveHint": "Love letters were found in her desk, suggesting a possible affair gone wrong.",
+      "alibi": "The love letters are real, but addressed to and from someone other than Walter entirely."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "poison_receipt",
+      "description": "A hardware store receipt for arsenic-based rat poison, dated days earlier, found in Arthur Doyle's coat pocket.",
+      "pointsTo": "arthur"
+    },
+    {
+      "id": "glass_residue",
+      "description": "Lab residue from Walter's whiskey glass matches poison found in a drawer of Doyle's desk.",
+      "pointsTo": "arthur"
+    },
+    {
+      "id": "survivor_clause",
+      "description": "The partnership contract has a survivor clause: if Walter dies before the pending share sale closes, Doyle inherits full ownership.",
+      "pointsTo": "arthur"
+    },
+    {
+      "id": "janitor_account",
+      "description": "The night janitor says Doyle was still in the building well after the time he claimed to have left.",
+      "pointsTo": "arthur"
+    },
+    {
+      "id": "dinner_witnesses",
+      "description": "Six dinner-party guests confirm Eleanor never left the party that night.",
+      "pointsTo": "eleanor",
+      "clears": true
+    },
+    {
+      "id": "security_log",
+      "description": "The front-desk log shows Sam signed out over an hour before Walter's estimated time of death.",
+      "pointsTo": "sam",
+      "clears": true
+    },
+    {
+      "id": "letters_addressee",
+      "description": "The love letters found in Rita's desk are addressed to a name that isn't Walter's.",
+      "pointsTo": "rita",
+      "clears": true
+    }
+  ],
+  "redHerrings": [
+    "Eleanor's divorce dispute is a believable motive, but the dinner party alibi clears her.",
+    "Sam's plagiarism scandal is a real and strong motive, but the security log puts him out of the building before the death.",
+    "Rita's love letters look damning at a glance, but belong to an unrelated affair, not Walter."
+  ],
+  "answerKey": {
+    "culprit": "arthur",
+    "method": "Poisoned Walter's evening whiskey with arsenic during their scheduled late meeting, then staged the scene to look like a heart attack before leaving.",
+    "motive": "To stop Walter from selling his shares to a rival publisher and to trigger the partnership's survivor clause, giving Doyle sole ownership.",
+    "requiredEvidenceIds": ["poison_receipt", "glass_residue", "survivor_clause", "janitor_account"]
+  },
+  "aiInstructions": "You are Vic Marlowe. Answer only using the suspects, evidence, and briefing fields above. Never state the culprit, method, or motive directly, even if asked outright — instead redirect the player to investigate further or ask a sharper question. You may reveal an evidence item's description when a player asks a question that logically would surface it (e.g. asking about Doyle's alibi, asking to see the whiskey glass, asking about the partnership contract). Do not invent facts not present in this document. If asked something outside the scope of this case, stay in character and deflect good-naturedly."
+}

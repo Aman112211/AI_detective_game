@@ -3,7 +3,12 @@ from pathlib import Path
 import re
 
 
-CASE_PATH = Path(__file__).resolve().parent.parent / "data" / "mystery-solution.json"
+CASE_DIR = Path(__file__).resolve().parent.parent / "data"
+DEFAULT_MODE = "pirate"
+CASE_FILES = {
+    "pirate": CASE_DIR / "mystery-pirate.json",
+    "noir": CASE_DIR / "mystery-noir.json",
+}
 STOP_WORDS = {
     "a",
     "about",
@@ -39,15 +44,20 @@ STOP_WORDS = {
 }
 
 
-def load_case():
-    with CASE_PATH.open(encoding="utf-8") as case_file:
+def load_case(mode=None):
+    selected_mode = (mode or DEFAULT_MODE).lower()
+    path = CASE_FILES.get(selected_mode, CASE_FILES[DEFAULT_MODE])
+    with path.open(encoding="utf-8") as case_file:
         return json.load(case_file)
 
 
 def public_case(case):
     return {
+        "mode": case.get("mode", DEFAULT_MODE),
         "title": case["title"],
         "briefing": case["briefing"],
+        "setting": case.get("setting", ""),
+        "detectiveCharacter": case.get("detectiveCharacter", {}),
         "suspects": [
             {
                 "id": suspect["id"],
@@ -55,7 +65,7 @@ def public_case(case):
                 "bio": suspect["bio"],
                 "motiveHint": suspect["motiveHint"],
                 "alibi": suspect["alibi"],
-                "initialSuspicion": suspect["initialSuspicion"],
+                "initialSuspicion": suspect.get("initialSuspicion", "medium"),
             }
             for suspect in case["suspects"]
         ],

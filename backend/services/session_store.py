@@ -4,10 +4,11 @@ from uuid import uuid4
 SESSIONS = {}
 
 
-def create_session(max_questions):
+def create_session(max_questions, mode="pirate"):
     session_id = str(uuid4())
     session = {
         "sessionId": session_id,
+        "mode": mode,
         "questionsRemaining": max_questions,
         "questionsAsked": 0,
         "askedQuestions": [],
