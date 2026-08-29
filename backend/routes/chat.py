@@ -29,7 +29,7 @@ def chat():
         return jsonify({"error": "Session not found"}), 404
     if session["gameStatus"] != "investigating":
         return jsonify({"error": "This session is not available for questions"}), 409
-    if session["questionsRemaining"] == 0:
+    if session["questionsRemaining"] <= 0:
         return jsonify({"error": "No questions remaining"}), 409
 
     case = load_case(session.get("mode", "pirate"))
