@@ -6,7 +6,7 @@ from services.case_data import (
     load_case,
     public_evidence,
 )
-from services.llm import generate_response
+from services.llm import LlmError, generate_response
 from services.session_store import get_session
 
 
@@ -40,6 +40,11 @@ def chat():
     all_discovered_ids = session["discoveredEvidenceIds"] + new_evidence_ids
     context = controlled_context(case, message, all_discovered_ids)
 
+    try:
+        response_text = generate_response(message, context)
+    except LlmError as exc:
+        return jsonify({"error": str(exc)}), 502
+
     session["questionsRemaining"] -= 1
     session["questionsAsked"] += 1
     session["askedQuestions"].append(message)
@@ -47,7 +52,7 @@ def chat():
 
     return jsonify(
         {
-            "response": generate_response(message, context),
+            "response": response_text,
             "questionsRemaining": session["questionsRemaining"],
             "newEvidence": public_evidence(case, new_evidence_ids),
             "discoveredEvidenceIds": new_evidence_ids,

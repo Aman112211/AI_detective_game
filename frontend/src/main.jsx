@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
 
@@ -10,9 +10,15 @@ async function readJsonResponse(response) {
 
   try {
     return JSON.parse(text);
-  } catch (error) {
-    throw new Error(`Server returned an invalid response (${response.status}).`);
+  } catch {
+    throw new Error(`Invalid JSON (${response.status}): ${text}`);
   }
+}
+
+function requestError(response, data) {
+  if (data && data.error) return data.error;
+  if (data) return `Request failed (${response.status}): ${JSON.stringify(data)}`;
+  return `Request failed (${response.status})`;
 }
 
 function App() {
@@ -29,6 +35,24 @@ function App() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [pirateTalking, setPirateTalking] = useState(false);
+  const speakTimeoutRef = useRef(null);
+
+  function clearSpeakTimeout() {
+    if (speakTimeoutRef.current) {
+      clearTimeout(speakTimeoutRef.current);
+      speakTimeoutRef.current = null;
+    }
+  }
+
+  function scheduleStopTalking(durationMs) {
+    clearSpeakTimeout();
+    speakTimeoutRef.current = setTimeout(() => {
+      setPirateTalking(false);
+      speakTimeoutRef.current = null;
+    }, durationMs);
+  }
+
+  useEffect(() => () => clearSpeakTimeout(), []);
 
   async function startCase() {
     setBusy(true); setError("");
@@ -39,7 +63,7 @@ function App() {
         body: JSON.stringify({ mode: selectedMode }),
       });
       const data = await readJsonResponse(response);
-      if (!response.ok) throw new Error((data && data.error) || "Could not open the case.");
+      if (!response.ok) throw new Error(requestError(response, data));
       setCaseData(data); setSessionId(data.sessionId); setQuestionsRemaining(data.questionsRemaining); setScreen("briefing");
     } catch (requestError) { setError(requestError.message); } finally { setBusy(false); }
   }
@@ -47,16 +71,21 @@ function App() {
   async function askQuestion(event) {
     event.preventDefault(); if (!draft.trim() || busy) return;
     const question = draft.trim(); setDraft(""); setBusy(true); setError("");
+    clearSpeakTimeout();
     setPirateTalking(true);
     try {
       const response = await fetch(`${API_URL}/api/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, message: question }) });
       const data = await readJsonResponse(response);
-      if (!response.ok) throw new Error((data && data.error) || "The detective could not answer.");
+      if (!response.ok) throw new Error(requestError(response, data));
       setMessages((current) => [...current, { role: "player", text: question }, { role: "detective", text: data.response }]);
       setQuestionsRemaining(data.questionsRemaining); setEvidence((current) => [...current, ...(data.newEvidence || [])]);
-    } catch (requestError) { setError(requestError.message); } finally {
-      setBusy(false);
+      const speakDurationMs = Math.max(1800, data.response.length * 50);
+      scheduleStopTalking(speakDurationMs);
+    } catch (requestError) {
+      setError(requestError.message);
       setPirateTalking(false);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -64,7 +93,7 @@ function App() {
     event.preventDefault(); const form = new FormData(event.currentTarget); setBusy(true); setError("");
     try {
       const response = await fetch(`${API_URL}/api/submit`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, culprit: form.get("culprit"), method: form.get("method"), motive: form.get("motive"), evidence: form.getAll("evidence") }) });
-      const data = await readJsonResponse(response); if (!response.ok) throw new Error((data && data.error) || "Could not submit accusation.");
+      const data = await readJsonResponse(response); if (!response.ok) throw new Error(requestError(response, data));
       setScore(data); setModalOpen(false); setScreen("score");
     } catch (requestError) { setError(requestError.message); } finally { setBusy(false); }
   }
@@ -88,6 +117,12 @@ function CharacterDisplay({ selectedMode, talking }) {
   return <PlaceholderDetective />;
 }
 
+const PIRATE_MOUTH_FRAMES = [
+  new URL("./assets/pirate/mouth_closed.png", import.meta.url).href,
+  new URL("./assets/pirate/mouth_half_open.png", import.meta.url).href,
+  new URL("./assets/pirate/mouth_full_open.png", import.meta.url).href,
+];
+
 function PirateCharacter({ talking }) {
   const idleLayers = [
     { key: "body", src: new URL("./assets/pirate/body.png", import.meta.url).href },
@@ -95,13 +130,6 @@ function PirateCharacter({ talking }) {
     { key: "left_hand", src: new URL("./assets/pirate/left_hand.png", import.meta.url).href },
     { key: "right_hand", src: new URL("./assets/pirate/right_hand.png", import.meta.url).href },
     { key: "hat", src: new URL("./assets/pirate/hat.png", import.meta.url).href },
-  ];
-
-  const mouthFrames = [
-    { key: "mouth_closed", src: new URL("./assets/pirate/mouth_closed.png", import.meta.url).href },
-    { key: "mouth_half_open", src: new URL("./assets/pirate/mouth_half_open.png", import.meta.url).href },
-    { key: "mouth_full_open", src: new URL("./assets/pirate/mouth_full_open.png", import.meta.url).href },
-    { key: "mouth_half_open_alt", src: new URL("./assets/pirate/mouth_half_open.png", import.meta.url).href },
   ];
 
   const [mouthIndex, setMouthIndex] = useState(0);
@@ -113,19 +141,18 @@ function PirateCharacter({ talking }) {
     }
 
     const intervalId = setInterval(() => {
-      setMouthIndex((current) => (current + 1) % mouthFrames.length);
-    }, 110);
+      setMouthIndex((current) => (current + 1) % PIRATE_MOUTH_FRAMES.length);
+    }, 140);
 
     return () => clearInterval(intervalId);
   }, [talking]);
 
-  const visibleLayers = talking
-    ? [
-        ...idleLayers.slice(0, 4),
-        mouthFrames[mouthIndex],
-        idleLayers[4],
-      ]
-    : idleLayers;
+  const mouthSrc = talking ? PIRATE_MOUTH_FRAMES[mouthIndex] : PIRATE_MOUTH_FRAMES[0];
+  const visibleLayers = [
+    ...idleLayers.slice(0, 4),
+    { key: "mouth", src: mouthSrc },
+    idleLayers[4],
+  ];
 
   return (
     <div className="character-puppet pirate-character" aria-label="Pirate detective">

@@ -9,19 +9,8 @@ except Exception:  # pragma: no cover
     genai = None
 
 
-def _fallback_response(message, context):
-    details = []
-    details.extend(suspect["alibi"] for suspect in context["suspects"])
-    details.extend(
-        event
-        for events in context["timeline"].values()
-        for event in events
-    )
-    details.extend(evidence["description"] for evidence in context["discoveredEvidence"])
-
-    if not details:
-        return "Ask me about a suspect, the evidence, the timeline, or a place aboard the ship, detective."
-    return "Aye, detective. " + " ".join(details[:3])
+class LlmError(Exception):
+    pass
 
 
 def _build_gemini_url(api_url, model):
@@ -78,15 +67,15 @@ def generate_response(message, context):
     api_url = os.getenv("LLM_API_URL", "https://api.groq.com/openai/v1/chat/completions")
     model = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
     if not api_key:
-        return _fallback_response(message, context)
+        raise LlmError("LLM_API_KEY or GOOGLE_API_KEY is not set")
+
+    system_prompt = (
+        "You are First Mate Salty Sable. Answer in character using only the supplied "
+        "case context. Never invent facts, reveal the culprit, mention hidden data, "
+        "or state that you are an AI. Keep the answer to 2-4 short sentences."
+    )
 
     try:
-        system_prompt = (
-            "You are First Mate Salty Sable. Answer in character using only the supplied "
-            "case context. Never invent facts, reveal the culprit, mention hidden data, "
-            "or state that you are an AI. Keep the answer to 2-4 short sentences."
-        )
-
         if genai is not None:
             client = genai.Client(api_key=api_key)
             response = client.models.generate_content(
@@ -94,7 +83,10 @@ def generate_response(message, context):
                 contents=json.dumps({"question": message, "caseContext": context}),
                 config={"system_instruction": system_prompt, "temperature": 0},
             )
-            return getattr(response, "text", None) or _extract_gemini_text(response.to_dict()) or _fallback_response(message, context)
+            text = getattr(response, "text", None) or _extract_gemini_text(response.to_dict())
+            if not text:
+                raise LlmError(f"LLM returned an empty response. Raw response: {response.to_dict()}")
+            return text
 
         is_gemini = bool(api_url and ("generativelanguage.googleapis.com" in api_url.lower() or "googleapis.com" in api_url.lower()))
         if is_gemini:
@@ -135,13 +127,18 @@ def generate_response(message, context):
             result = json.load(response)
 
         if is_gemini:
-            return _extract_gemini_text(result) or _fallback_response(message, context)
+            text = _extract_gemini_text(result)
+            if not text:
+                raise LlmError(f"LLM returned an empty response. Raw response: {result}")
+            return text
 
         text = _extract_openai_content(result)
         if text:
             return text
-        return _fallback_response(message, context)
+        raise LlmError(f"LLM returned an empty response. Raw response: {result}")
+    except LlmError:
+        raise
     except Exception as exc:
         print(f"[LLM_ERROR] {type(exc).__name__}: {exc}")
         traceback.print_exc()
-        return _fallback_response(message, context)
+        raise LlmError(f"{type(exc).__name__}: {exc}") from exc
