@@ -1,4 +1,8 @@
+#Game link
+https://ai-detective-game-xi.vercel.app/
+
 # AI Detective — How to Play
+
 
 AI Detective is a single-player mystery game where the player interrogates a fictional detective, gathers clues, and finally makes a criminal accusation.
 
